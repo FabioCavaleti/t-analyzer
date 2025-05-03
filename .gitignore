@@ -1,0 +1,40 @@
+# Exclude C++ build artifacts and directories
+/cpp_modules/build/
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+bt-analyzer
+
+# Exclude Python virtual environments and caches
+/python_backend/venv/
+/python_backend/.venv/
+/python_backend/__pycache__/
+/python_backend/*.py[cod]
+/python_backend/*.pyo
+.python-version
+.env
+
+# Exclude generated outputs and test data
+/test_outputs/
+
+# Exclude sample videos (large media files)
+/sample_videos/
+
+/resources/
+
+# Exclude Docker override files
+docker-compose.override.yml
+
+# IDE and editor directories
+.vscode/
+.idea/
+
+# macOS and Windows system files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
