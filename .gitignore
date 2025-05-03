@@ -17,7 +17,7 @@ bt-analyzer
 .env
 
 # Exclude generated outputs and test data
-/test_outputs/
+/outputs/
 
 # Exclude sample videos (large media files)
 /sample_videos/
