@@ -18,6 +18,9 @@ bt-analyzer
 
 # Exclude generated outputs and test data
 /outputs/
+/test_outputs/
+*.mp4
+*.avi
 
 # Exclude sample videos (large media files)
 /sample_videos/

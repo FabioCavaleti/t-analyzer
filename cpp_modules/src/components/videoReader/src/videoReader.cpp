@@ -1,17 +1,22 @@
 #include "videoReader.hpp"
 #include <iostream>
+#include "logging.hpp"
 
 VideoReader::VideoReader(const std::string &inputPath) : cap(inputPath)
 {
     if (!cap.isOpened())
     {
-        std::cerr << "Error opening video" << std::endl;
+        logger::error("Error opening video: %s", inputPath.c_str());
     }
+    logger::info("Video successfully opened.");
 }
 
 bool VideoReader::readFrame(cv::Mat &frame)
 {
-    return cap.read(frame);
+    bool success = cap.read(frame);
+    if(!success)
+        logger::warning("Failed to read frame from video stream.");
+    return success;
 }
 
 
@@ -40,5 +45,6 @@ cv::Size VideoReader::getFrameSize()
 
 void VideoReader::release()
 {
+    logger::info("Releasing video reader...");
     cap.release();
 }

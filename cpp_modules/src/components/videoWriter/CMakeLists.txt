@@ -18,6 +18,7 @@ install(TARGETS video_writer)
 
 target_link_libraries(video_writer
     PUBLIC
+        log
         ${OpenCV_LIBS}  # Link OpenCV libraries
 )
 

@@ -19,6 +19,7 @@ install(TARGETS video_reader)
 
 target_link_libraries(video_reader
     PUBLIC
+        log
         ${OpenCV_LIBS}  # Link OpenCV libraries
 )
 

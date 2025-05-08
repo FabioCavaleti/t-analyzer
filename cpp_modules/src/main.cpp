@@ -3,45 +3,50 @@
 #include <opencv2/opencv.hpp>
 #include "videoWriter.hpp"
 #include "videoReader.hpp"
+#include "logging.hpp"
 
 int main()
 {
     std::string videoPath = "/project/resources/video_test.mp4";
+    logger::info("Initializing video reader with path: %s...", videoPath.c_str());
     VideoReader reader(videoPath);
 
     if (!reader.isOpened())
     {
-        std::cerr << "Could not open reader." << std::endl;
+        logger::error("Failed to open video reader.");
         return -1;
     }
-    std::cout << "Video Reader instanciado" << std::endl;
+    logger::info("Video reader successfully initialized.");
+
 
     std::string outputPath = "/project/test_outputs/output.avi";
+    logger::info("Initializing video writer with path: %s...", outputPath.c_str());
     VideoWriter writer(outputPath, reader.getFrameSize(), reader.getFps());
 
     if (!writer.isOpened())
     {
-        std::cerr << "Could not open writer." << std::endl;
+        logger::error("Failed to open video writer");
         return -1;
     }
 
-    std::cout << "Video Writer instanciado" << std::endl;
+    logger::info("Video writer successfully initialized.");
 
     cv::Mat frame;
     int cnt = 0;
+    
+    logger::info("Processing video...");
     while (reader.readFrame(frame))
     {
-        std::cout << "Frame: " << cnt << std::endl;
 
         writer.writeFrame(frame);
 
         cnt++;
     }
 
-    std::cout << "Saiu do while" << std::endl;
-
     reader.release();
     writer.release();
+
+    logger::info("Resources released. Exiting application...");
 
 
     

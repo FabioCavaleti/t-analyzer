@@ -4,9 +4,8 @@ project(Bt-Analyzer)
 find_package(OpenCV REQUIRED)
 
 
-
-add_subdirectory(videoReader)
-add_subdirectory(videoWriter)
+add_subdirectory(common)
+add_subdirectory(components)
 
 
 
@@ -14,6 +13,7 @@ add_executable(bt-analyzer main.cpp)
 
 target_link_libraries(bt-analyzer
     PRIVATE
+        log
         video_reader
         video_writer
         ${OpenCV_LIBS}  # Link OpenCV libraries
