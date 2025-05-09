@@ -3,9 +3,9 @@
 
 #include <opencv2/opencv.hpp>
 
-FrameQueue::FrameQueue()
+FrameQueue::FrameQueue(size_t maxSize):max_size_(maxSize)
 {
-    logger::info("Frame Queue successfully initialized.");
+    logger::info("Frame Queue successfully initialized with max size: %zu.", max_size_);
 }
 
 bool FrameQueue::isEmpty()
@@ -22,7 +22,13 @@ bool FrameQueue::stopped()
 void FrameQueue::push(const cv::Mat &frame)
 {
     {
-        std::lock_guard<std::mutex> lg(mtx_);
+        std::unique_lock<std::mutex> lock(mtx_);
+        full_cond_.wait(lock, [&](){
+            return Q_.size() < max_size_ || stopped_;
+        });
+
+        if (stopped_)
+            return;
         Q_.push(frame.clone());
     }
     cond_.notify_one();
@@ -46,6 +52,7 @@ bool FrameQueue::pop(cv::Mat &frame)
     }
     frame = Q_.front();
     Q_.pop();
+    full_cond_.notify_one();
     return true;   
 }
 
@@ -56,6 +63,7 @@ void FrameQueue::stop()
         stopped_ = true;
     }
     cond_.notify_one();
+    full_cond_.notify_one();
 }
 
 

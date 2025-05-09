@@ -11,7 +11,7 @@
 class FrameQueue
 {
     public:
-        FrameQueue();
+        FrameQueue(size_t maxSize = 80);
         void push(const cv::Mat &frame);
         bool pop(cv::Mat &frame);
         void stop();
@@ -23,7 +23,9 @@ class FrameQueue
     std::queue<cv::Mat> Q_;  
     std::mutex mtx_;
     std::condition_variable cond_;
+    std::condition_variable full_cond_;
     bool stopped_ = false;
+    size_t max_size_;
 
 };
 

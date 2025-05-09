@@ -12,16 +12,14 @@ int main()
 {
     std::string videoPath = "/project/resources/video_test.mp4";
     VideoReader reader(videoPath);
-    VideoReader teste("/project/test_outputs/output.avi");
 
     logger::info("Reader fps: %f", reader.getFps());
-    logger::info("Test fps: %f", teste.getFps());
 
     if (!reader.isOpened())
         return -1;
 
 
-    std::string outputPath = "/project/test_outputs/output.avi";
+    std::string outputPath = "/project/outputs/output.avi";
     VideoWriter writer(outputPath, reader.getFrameSize(), reader.getFps());
 
     if (!writer.isOpened())
