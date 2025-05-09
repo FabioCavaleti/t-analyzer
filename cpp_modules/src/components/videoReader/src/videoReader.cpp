@@ -9,6 +9,7 @@ VideoReader::VideoReader(const std::string &inputPath) : cap(inputPath)
         logger::error("Error opening video: %s", inputPath.c_str());
     }
     logger::info("Video successfully opened.");
+    logger::info("Video total frames: %f", cap.get(cv::CAP_PROP_FRAME_COUNT));
 }
 
 bool VideoReader::readFrame(cv::Mat &frame)

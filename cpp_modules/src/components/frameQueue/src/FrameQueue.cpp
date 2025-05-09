@@ -21,10 +21,9 @@ bool FrameQueue::stopped()
 
 void FrameQueue::push(const cv::Mat &frame)
 {
-    logger::info("Adding frame to queue...");
     {
         std::lock_guard<std::mutex> lg(mtx_);
-        Q_.push(frame);
+        Q_.push(frame.clone());
     }
     cond_.notify_one();
 }
@@ -32,15 +31,17 @@ void FrameQueue::push(const cv::Mat &frame)
 
 bool FrameQueue::pop(cv::Mat &frame)
 {
-    logger::info("Poping frame from queue...");
     std::unique_lock<std::mutex> lock(mtx_);
     cond_.wait(lock, [&]{
         return !Q_.empty() || stopped_;
     });
 
-    if(Q_.empty())
+    if (Q_.empty())
     {
-        logger::info("Tried to pop queue but empty.");
+        if (stopped_)
+            logger::info("Queue stopped and empty — no more frames to consume.");
+        else
+            logger::warning("Unexpected empty queue without stop signal.");
         return false;
     }
     frame = Q_.front();
