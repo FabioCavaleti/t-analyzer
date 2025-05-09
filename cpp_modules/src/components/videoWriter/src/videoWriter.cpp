@@ -4,7 +4,11 @@
 
 VideoWriter::VideoWriter(const std::string &outputPath, cv::Size frameSize, double fps, int codec) : writer(outputPath, codec, fps, frameSize)
 {
-    
+    if (!writer.isOpened())
+    {
+        logger::error("Error opening writer: %s", outputPath.c_str());
+    }
+    logger::info("Writer successfully opened.");
 }
 
 bool VideoWriter::isOpened() const

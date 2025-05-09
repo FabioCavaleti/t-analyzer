@@ -3,3 +3,4 @@ project(components)
 
 add_subdirectory(videoReader)
 add_subdirectory(videoWriter)
+add_subdirectory(frameQueue)
