@@ -2,6 +2,7 @@
 #include "videoWriter.hpp"
 #include "videoReader.hpp"
 #include "FrameQueue.hpp"
+#include "FrameProcessor.hpp"
 #include "logging.hpp"
 
 #include <iostream>
@@ -25,28 +26,43 @@ int main()
     if (!writer.isOpened())
         return -1;
 
-    FrameQueue queue;
+    FrameProcessor processor;
 
-    int cnt_reader = 0;
-    int cnt_writer = 0;
+    FrameQueue raw_frame_queue;
+    FrameQueue processed_frame_queue;
+
     
     std::thread reader_thread([&]() {
         cv::Mat frame;
         while (reader.readFrame(frame))
         {
-            queue.push(frame);  
-            cnt_reader++;
+            raw_frame_queue.push(frame);  
         }
         
-        queue.stop();  
     });
+
+    std::thread frame_processor_thread([&]() {
+
+        cv::Mat frame;
+        int frame_id = 0;
+        std::string shm_name;
+        while(raw_frame_queue.pop(frame))
+        {
+            shm_name = "frame_" + std::to_string(frame_id);
+            processor.process(frame, shm_name, std::to_string(frame_id));
+            frame_id++;
+            processed_frame_queue.push(frame);
+        }
+
+    });
+    
+
 
     std::thread writer_thread([&]() {
         cv::Mat frame;
-        while (queue.pop(frame))
+        while (processed_frame_queue.pop(frame))
         {
             writer.writeFrame(frame);
-            cnt_writer++;
         }
         
     });
@@ -55,8 +71,6 @@ int main()
     reader_thread.join();
     writer_thread.join();
     
-    logger::info("cnt value: %d", cnt_reader);
-    logger::info("cnt value: %d", cnt_writer);
     reader.release();
     writer.release();
     logger::info("Resources released. Exiting application...");

@@ -17,5 +17,6 @@ target_link_libraries(bt-analyzer
         video_reader
         video_writer
         frame_queue
+        frame_processor
         ${OpenCV_LIBS}  # Link OpenCV libraries
 )
