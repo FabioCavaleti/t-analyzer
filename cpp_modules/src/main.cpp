@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
         return -1;
 
 
-    std::string outputPath = "/project/outputs/output.avi";
+    std::string outputPath = "/project/outputs/output.mp4";
     VideoWriter writer(outputPath, reader.getFrameSize(), reader.getFps());
 
     if (!writer.isOpened())
@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
             raw_q_counter++;
             logger::info("Raw Counter: %d", raw_q_counter);
         }
+        raw_frame_queue.stop();
         logger::info("Reader Terminou!!");
         
     });
@@ -63,6 +64,7 @@ int main(int argc, char* argv[])
             processed_frame_queue.push(frame);
             logger::info("Frame Counter: %d", frame_id);
         }
+        processed_frame_queue.stop();
         logger::info("Processor Terminou!!");
         
     });
@@ -83,6 +85,7 @@ int main(int argc, char* argv[])
 
     
     reader_thread.join();
+    frame_processor_thread.join();
     writer_thread.join();
     
     reader.release();

@@ -8,7 +8,7 @@
 class VideoWriter
 {
     public:
-        VideoWriter(const std::string &outputPath, cv::Size frameSize, double fps = 30.0, int codec = cv::VideoWriter::fourcc('X', 'V', 'I', 'D'));
+        VideoWriter(const std::string &outputPath, cv::Size frameSize, double fps = 30.0, int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v'));
 
         bool isOpened() const;
         
