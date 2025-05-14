@@ -9,10 +9,14 @@
 #include <string>
 #include <thread>
 
-int main()
+int main(int argc, char* argv[])
 {
+    loguru::init(argc, argv);
+    loguru::add_file("/var/log/bt-analyzer.log", loguru::Append, loguru::Verbosity_INFO);
+
     std::string videoPath = "/project/resources/video_test.mp4";
     VideoReader reader(videoPath);
+
 
     logger::info("Reader fps: %f", reader.getFps());
 
@@ -31,18 +35,23 @@ int main()
     FrameQueue raw_frame_queue;
     FrameQueue processed_frame_queue;
 
+    int raw_q_counter = 0, proc_q_counter = 0;
+
     
     std::thread reader_thread([&]() {
         cv::Mat frame;
         while (reader.readFrame(frame))
         {
-            raw_frame_queue.push(frame);  
+            raw_frame_queue.push(frame);
+            raw_q_counter++;
+            logger::info("Raw Counter: %d", raw_q_counter);
         }
+        logger::info("Reader Terminou!!");
         
     });
-
+    
     std::thread frame_processor_thread([&]() {
-
+        
         cv::Mat frame;
         int frame_id = 0;
         std::string shm_name;
@@ -52,18 +61,23 @@ int main()
             processor.process(frame, shm_name, std::to_string(frame_id));
             frame_id++;
             processed_frame_queue.push(frame);
+            logger::info("Frame Counter: %d", frame_id);
         }
-
+        logger::info("Processor Terminou!!");
+        
     });
     
-
-
+    
+    
     std::thread writer_thread([&]() {
         cv::Mat frame;
         while (processed_frame_queue.pop(frame))
         {
             writer.writeFrame(frame);
+            proc_q_counter++;
+            logger::info("Proc Counter: %d", proc_q_counter);
         }
+        logger::info("Writer Terminou");
         
     });
 

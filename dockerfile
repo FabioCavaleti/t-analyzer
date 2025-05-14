@@ -13,6 +13,7 @@ RUN pip3 install --no-cache-dir \
     fastapi \
     uvicorn[standard] \
     numpy \
-    opencv-python-headless
+    opencv-python-headless \
+    loguru
 
 WORKDIR /project
