@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import json
 import os
+from ultralytics import YOLO
 
 app = FastAPI()
 
@@ -38,14 +39,32 @@ def infer(frame_id: str):
 
     # Dummy detection logic
     h, w = img_copy.shape[:2]
-    detection = {"x": int(w / 4), "y": int(h / 4), "w": int(w / 2), "h": int(h / 2)}
-    logger.info(f"Generated dummy detection: {detection}")
+    model = YOLO('/project/resources/models/yolov8n.pt')
+    
+    results = model.predict(img_copy, imgsz=640)
+    result = results[0] 
+    boxes = result.boxes
+    detections = []
+    if boxes is not None:
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            conf = box.conf[0].item()
+            cls_id = int(box.cls[0])
+
+            detections.append({
+                "x": int(x1),
+                "y": int(y1),
+                "w": int(x2 - x1),
+                "h": int(y2 - y1),
+                "conf": conf,
+                "cls": cls_id
+            })
 
     # Save result JSON
     os.makedirs("/tmp/results", exist_ok=True)
     result_path = f"/tmp/results/{frame_id}.json"
     with open(result_path, "w") as f:
-        json.dump({"detections": [detection]}, f)
+        json.dump({"detections": detections}, f)
 
     logger.info(f"Saved detection result to: {result_path}")
 

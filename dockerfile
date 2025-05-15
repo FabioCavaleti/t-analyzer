@@ -14,6 +14,12 @@ RUN pip3 install --no-cache-dir \
     uvicorn[standard] \
     numpy \
     opencv-python-headless \
-    loguru
+    loguru \
+    ultralytics \ 
+    onnxruntime \
+    tflite-runtime 
+
+# using nvidia gpu inside docker, comment this file if you dont have one.
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
 
 WORKDIR /project

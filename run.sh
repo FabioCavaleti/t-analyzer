@@ -10,6 +10,7 @@ else
     echo "Starting container using docker run..."
     xhost +local:root
     docker run \
+    --gpus all \ 
     --rm \
     --name bt-analyzer \
     -v $(pwd):/project \

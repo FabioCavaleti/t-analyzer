@@ -27,6 +27,8 @@ bt-analyzer
 
 /resources/
 
+teste.py
+
 # Exclude Docker override files
 docker-compose.override.yml
 
