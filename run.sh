@@ -1,3 +1,4 @@
+#!/bin/bash
 if docker ps | grep -q "bt-analyzer"; then
     echo "Container is already running, using docker exec..."
     docker exec -it bt-analyzer bash
@@ -8,14 +9,11 @@ else
     docker pull fcavaleti/bt-analyzer:latest
 
     echo "Starting container using docker run..."
-    xhost +local:root
     docker run \
-    --gpus all \ 
+    --gpus all \
     --rm \
     --name bt-analyzer \
     -v $(pwd):/project \
-    -e DISPLAY=$DISPLAY \
-    -v /tmp/.X11-unix:/tmp/.X11-unix \
     -w /project \
     --net=host \
     --privileged \
