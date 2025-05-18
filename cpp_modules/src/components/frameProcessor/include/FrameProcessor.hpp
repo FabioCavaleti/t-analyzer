@@ -11,11 +11,14 @@ class FrameProcessor
 
         void write_frame_to_shm(const cv::Mat &frame, const std::string &shm_name);
         void process(cv::Mat &frame, const std::string &shm_name, std::string frame_id);
+        float getThreshold();
+        void setThreshold(float value);
 
     private:
 
     void run_inference(std::string frame_id);
     void draw(cv::Mat &frame, const std::string &result_json_path);
+    float threshold_ = 0.1f;
 
 };
 

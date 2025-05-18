@@ -49,7 +49,8 @@ def infer(frame_id: str):
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             conf = box.conf[0].item()
-            cls_id = int(box.cls[0])
+            class_id = int(box.cls[0])
+            label = model.names[class_id]
 
             detections.append({
                 "x": int(x1),
@@ -57,7 +58,9 @@ def infer(frame_id: str):
                 "w": int(x2 - x1),
                 "h": int(y2 - y1),
                 "conf": conf,
-                "cls": cls_id
+                "classId": class_id,
+                "label": label
+                
             })
 
     # Save result JSON

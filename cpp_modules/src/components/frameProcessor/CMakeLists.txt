@@ -12,6 +12,7 @@ include_directories(
 
 add_library(frame_processor
     include/FrameProcessor.hpp
+    include/types.hpp
     src/FrameProcessor.cpp
 )
 

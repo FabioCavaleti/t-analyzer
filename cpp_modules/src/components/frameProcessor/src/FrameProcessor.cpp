@@ -1,4 +1,5 @@
 #include "FrameProcessor.hpp"
+#include "types.hpp"
 #include "logging.hpp"
 
 #include <fcntl.h>
@@ -35,6 +36,34 @@ void FrameProcessor::run_inference(std::string frame_id)
     }
 }
 
+float FrameProcessor::getThreshold()
+{
+    return threshold_;
+}
+
+void FrameProcessor::setThreshold(float value)
+{
+    threshold_ = value;
+}
+
+void drawBoxes(cv::Mat &frame, const std::vector<types::Detection> &detections)
+{
+    for(const types::Detection &det: detections)
+    {
+        const types::BoundingBox &box = det.box;
+        cv::rectangle(frame,
+                    cv::Rect(box.x, box.y, box.width, box.height),
+                    cv::Scalar(0, 255, 0), 2);
+
+        cv::putText(frame, det.label,
+                    cv::Point(box.x, box.y - 5),
+                    cv::FONT_HERSHEY_SIMPLEX,
+                    0.5, cv::Scalar(0, 255, 0), 1);
+    }
+    
+}
+
+
 void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
 {
     logger::info("Attempting to open result JSON: %s", result_json_path.c_str());
@@ -64,19 +93,26 @@ void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
         return;
     }
 
-      for (auto &det : result["detections"])
+    std::vector<types::Detection> detections;
+    for (auto &item : result["detections"])
     {
-        int x = det.value("x", -1);
-        int y = det.value("y", -1);
-        int w = det.value("w", -1);
-        int h = det.value("h", -1);
+        float conf = item.value("conf", 0.0f);
+        if(conf < getThreshold())
+            continue;
+        types::BoundingBox bbox(item.value("x", 0),
+                            item.value("y", 0),
+                            item.value("w", 0),
+                            item.value("h", 0));
+        types::Detection det;
+        det.box = bbox;
+        det.conf = item.value("conf",0.0f);
+        det.classId = item.value("classId", -1);
+        det.label = item.value("label", "");
 
-        logger::info("Drawing rectangle: x=%d y=%d w=%d h=%d", x, y, w, h);
-
-        cv::rectangle(frame,
-                      cv::Rect(x, y, w, h),
-                      cv::Scalar(0, 255, 0), 2);
+        detections.push_back(det);
     }
+
+    drawBoxes(frame, detections);
 }
 
 void FrameProcessor::process(cv::Mat &frame, const std::string &shm_name, std::string frame_id)
