@@ -24,6 +24,32 @@ void FrameProcessor::write_frame_to_shm(const cv::Mat &frame, const std::string 
     close(fd);
 }
 
+bool FrameProcessor::modelRegistered()
+{
+    return model_registered_;
+}
+
+void FrameProcessor::register_inference_model(const cv::Mat &frame)
+{
+    int height = frame.rows;
+    int width = frame.cols;
+    int channels = frame.channels();
+
+    CURL *curl = curl_easy_init();
+    if (curl)
+    {
+        std::string url = "http://localhost:8000/register?"
+                          "height=" +
+                          std::to_string(height) +
+                          "&width=" + std::to_string(width) +
+                          "&channels=" + std::to_string(channels);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+        model_registered_ = true;
+    }
+}
+
 void FrameProcessor::run_inference(std::string frame_id)
 {
     CURL *curl = curl_easy_init();
@@ -48,83 +74,94 @@ void FrameProcessor::setThreshold(float value)
 
 void drawBoxes(cv::Mat &frame, const std::vector<types::Detection> &detections)
 {
-    for(const types::Detection &det: detections)
+    logger::info("Detections size: %zu", detections.size());
+    for (const types::Detection &det : detections)
     {
+        logger::info("Entrou");
+        logger::info("Detection - Label: %s, Conf: %.2f, Box[x: %d, y: %d, w: %d, h: %d]",
+                     det.label.c_str(), det.conf, det.box.x, det.box.y, det.box.width, det.box.height);
         const types::BoundingBox &box = det.box;
         cv::rectangle(frame,
-                    cv::Rect(box.x, box.y, box.width, box.height),
-                    cv::Scalar(0, 255, 0), 2);
+                      cv::Rect(box.x, box.y, box.width, box.height),
+                      cv::Scalar(0, 255, 0), 2);
 
         cv::putText(frame, det.label,
                     cv::Point(box.x, box.y - 5),
                     cv::FONT_HERSHEY_SIMPLEX,
                     0.5, cv::Scalar(0, 255, 0), 1);
     }
-    
 }
-
 
 void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
 {
-    logger::info("Attempting to open result JSON: %s", result_json_path.c_str());
-    
+    // logger::info("Attempting to open result JSON: %s", result_json_path.c_str());
+
     std::ifstream ifs(result_json_path);
-    if (!ifs.is_open()) {
+    if (!ifs.is_open())
+    {
         logger::error("Failed to open result JSON file: %s", result_json_path.c_str());
         return;
     }
 
     ifs.seekg(0, std::ios::end);
-    if (ifs.tellg() == 0) {
+    if (ifs.tellg() == 0)
+    {
         logger::error("Result JSON file is empty: %s", result_json_path.c_str());
         return;
     }
     ifs.seekg(0, std::ios::beg);
     nlohmann::json result;
-     try {
+    try
+    {
         ifs >> result;
-    } catch (const nlohmann::json::parse_error &e) {
+    }
+    catch (const nlohmann::json::parse_error &e)
+    {
         logger::error("JSON parse error in %s: %s", result_json_path.c_str(), e.what());
         return;
     }
-    logger::info("Successfully parsed result JSON.");
-    if (!result.contains("detections")) {
+    // logger::info("Successfully parsed result JSON.");
+    if (!result.contains("detections"))
+    {
         logger::warning("Result JSON does not contain 'detections' key.");
         return;
     }
+
+    logger::info("Printing result json \n %s", result.dump(4).c_str());
 
     std::vector<types::Detection> detections;
     for (auto &item : result["detections"])
     {
         float conf = item.value("conf", 0.0f);
-        if(conf < getThreshold())
+        if (conf < getThreshold())
             continue;
         types::BoundingBox bbox(item.value("x", 0),
-                            item.value("y", 0),
-                            item.value("w", 0),
-                            item.value("h", 0));
+                                item.value("y", 0),
+                                item.value("w", 0),
+                                item.value("h", 0));
         types::Detection det;
         det.box = bbox;
-        det.conf = item.value("conf",0.0f);
+        det.conf = item.value("conf", 0.0f);
         det.classId = item.value("classId", -1);
         det.label = item.value("label", "");
 
         detections.push_back(det);
     }
-
     drawBoxes(frame, detections);
 }
 
 void FrameProcessor::process(cv::Mat &frame, const std::string &shm_name, std::string frame_id)
 {
     write_frame_to_shm(frame, shm_name);
-    logger::info("write_frame_OK!");
+    // logger::info("write_frame_OK!");
+    if (!modelRegistered())
+        register_inference_model(frame);
     run_inference(frame_id);
-    logger::info("Run inference OK!!");
+    // logger::info("Run inference OK!!");
     std::string result_path = "/tmp/results/" + frame_id + ".json";
-    while(true)
+    while (true)
     {
-        logger::info("Teste");
+        // logger::info("Teste");
         if (std::filesystem::exists(result_path))
             break;
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -132,5 +169,4 @@ void FrameProcessor::process(cv::Mat &frame, const std::string &shm_name, std::s
     shm_unlink(shm_name.c_str());
     draw(frame, result_path);
     std::filesystem::remove(result_path);
-
 }

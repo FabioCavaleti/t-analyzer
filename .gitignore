@@ -27,6 +27,8 @@ bt-analyzer
 
 /resources/
 
+/results/
+
 teste.py
 
 # Exclude Docker override files

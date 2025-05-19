@@ -12,12 +12,25 @@ app = FastAPI()
 # Configura o loguru (opcional: envia para arquivo também)
 logger.add("/var/log/server.log", level="INFO")
 
+REGISTERED_MODEL = None
+
+@app.get("/register")
+def register(height: int, width: int, channels: int):
+    global REGISTERED_MODEL
+    if REGISTERED_MODEL is None:
+        REGISTERED_MODEL = {
+            "weights":'/project/resources/models/yolov8n.pt',
+            "shape": (height, width, channels)
+        }
+
 @app.get("/infer")
 def infer(frame_id: str):
     logger.info(f"Received inference request for frame_id: {frame_id}")
+    if not REGISTERED_MODEL:
+        return {"status":"fail"}
 
     shm_name = f"frame_{frame_id}"
-    shape = (720, 1280, 3)
+    shape = REGISTERED_MODEL["shape"]
 
     try:
         shm = shared_memory.SharedMemory(name=shm_name)
@@ -29,6 +42,7 @@ def infer(frame_id: str):
     try:
         image = np.ndarray(shape, dtype=np.uint8, buffer=shm.buf)
         img_copy = image.copy()
+        cv2.imwrite("/project/results/img.png", img_copy)
         logger.info(f"Frame shape: {img_copy.shape}")
     except Exception as e:
         logger.error(f"Error reading frame from SHM: {e}")
@@ -39,7 +53,7 @@ def infer(frame_id: str):
 
     # Dummy detection logic
     h, w = img_copy.shape[:2]
-    model = YOLO('/project/resources/models/yolov8n.pt')
+    model = YOLO(REGISTERED_MODEL["weights"])    
     
     results = model.predict(img_copy, imgsz=640)
     result = results[0] 
@@ -59,10 +73,10 @@ def infer(frame_id: str):
                 "h": int(y2 - y1),
                 "conf": conf,
                 "classId": class_id,
-                "label": label
-                
+                "label": label  
             })
 
+    print(detections)
     # Save result JSON
     os.makedirs("/tmp/results", exist_ok=True)
     result_path = f"/tmp/results/{frame_id}.json"

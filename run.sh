@@ -1,6 +1,7 @@
 #!/bin/bash
 if docker ps | grep -q "bt-analyzer"; then
     echo "Container is already running, using docker exec..."
+    # docker exec -d bt-analyzer bash -c "cd /project && uvicorn python_backend.server:app --host 0.0.0.0 --port 8000 --reload > uvicorn.log 2>&1 &"
     docker exec -it bt-analyzer bash
 else
     echo "Container is not running, checking if the image is up-to-date..."
