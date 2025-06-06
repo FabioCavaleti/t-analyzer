@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     loguru::init(argc, argv);
     loguru::add_file("/var/log/bt-analyzer.log", loguru::Append, loguru::Verbosity_INFO);
 
-    std::string videoPath = "/project/resources/short.mp4";
+    std::string videoPath = "/project/resources/example.mp4";
     VideoReader reader(videoPath);
 
 
