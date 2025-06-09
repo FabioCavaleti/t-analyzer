@@ -116,8 +116,9 @@ def registerPlayerDetector():
     if REGISTERED_PLAYER_DETECTOR is False:
         weights = '/project/resources/models/yolov8n.pt'
         model = YOLO(weights)
-        model.classes = [0]  # Assuming class 0 is for players
-        model.names = {0: 'Player'}
+        # print(model.classes)
+        # model.classes = [0]  # Assuming class 0 is for players
+        # model.names = {0: 'Player'}
         REGISTERED_MODELS['player_detector'] = model
         REGISTERED_PLAYER_DETECTOR = True
         return {"status": "success", "message": "Player detector registered successfully"}

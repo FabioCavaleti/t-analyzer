@@ -43,7 +43,7 @@ class CourtDetector:
 
     def detect(self, image: np.ndarray) -> list:
         orig_h, orig_w = image.shape[:2]
-        image_tensor = self.transform(image)
+        image_tensor = self.transform(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
             output = self.model(image_tensor)
         keypoints = output.squeeze().cpu().numpy()
