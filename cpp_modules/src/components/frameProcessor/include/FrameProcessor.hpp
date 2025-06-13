@@ -8,7 +8,7 @@
 class FrameProcessor
 {
     public:
-
+        FrameProcessor(std::string url = "http://localhost:8000");
         void write_frame_to_shm(const cv::Mat &frame, const std::string &shm_name);
         void process(cv::Mat &frame, const std::string &shm_name, std::string frame_id);
         float getThreshold();
@@ -16,7 +16,13 @@ class FrameProcessor
         bool modelRegistered();
 
     private:
-    void register_inference_model(const cv::Mat &frame);
+    std::string URL_;
+    bool call_api(std::string& endpoint);
+    bool register_court_detector_();
+    bool register_player_detector_();
+    bool register_ball_detector_();
+    bool register_shape_(int height, int width);
+    void register_inference_model_(const cv::Mat &frame);
     void run_inference(std::string frame_id);
     void draw(cv::Mat &frame, const std::string &result_json_path);
     float threshold_ = 0.1f;

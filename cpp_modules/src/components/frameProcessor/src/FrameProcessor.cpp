@@ -13,6 +13,8 @@
 #include <chrono>
 #include <thread>
 
+FrameProcessor::FrameProcessor(std::string url) : URL_(url) {}
+
 void FrameProcessor::write_frame_to_shm(const cv::Mat &frame, const std::string &shm_name)
 {
     size_t size = frame.total() * frame.elemSize();
@@ -29,25 +31,68 @@ bool FrameProcessor::modelRegistered()
     return model_registered_;
 }
 
-void FrameProcessor::register_inference_model(const cv::Mat &frame)
+bool FrameProcessor::call_api(std::string &endpoint)
+{
+    CURL *curl = curl_easy_init();
+    if (!curl)
+        return false;
+
+    std::string url = URL_ + endpoint;
+    curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    return !res;
+}
+
+bool FrameProcessor::register_shape_(int height, int width)
+{
+
+    std::string url = URL_ + "/register_shape?" +
+                      "height=" + std::to_string(height) +
+                      "&width=" + std::to_string(width);
+    bool res = call_api(url);
+
+    return res;
+}
+
+bool FrameProcessor::register_court_detector_()
+{
+    std::string url = URL_ + "/register_court_detector";
+    bool res = call_api(url);
+
+    return res;
+}
+
+bool FrameProcessor::register_player_detector_()
+{
+    std::string url = URL_ + "/register_player_detector";
+    bool res = call_api(url);
+
+    return res;
+}
+
+bool FrameProcessor::register_ball_detector_()
+{
+    std::string url = URL_ + "/register_ball_detector";
+    bool res = call_api(url);
+
+    return res;
+}
+
+void FrameProcessor::register_inference_model_(const cv::Mat &frame)
 {
     int height = frame.rows;
     int width = frame.cols;
-    int channels = frame.channels();
-
-    CURL *curl = curl_easy_init();
-    if (curl)
+    bool model_registered = register_shape_(height, width);
+    model_registered = model_registered && register_court_detector_();
+    model_registered = model_registered && register_player_detector_();
+    model_registered = model_registered && register_ball_detector_();
+    if (!model_registered)
     {
-        std::string url = "http://localhost:8000/register?"
-                          "height=" +
-                          std::to_string(height) +
-                          "&width=" + std::to_string(width) +
-                          "&channels=" + std::to_string(channels);
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        model_registered_ = true;
+        logger::error("Error registering models");
+        return;
     }
+    model_registered_ = model_registered;
 }
 
 void FrameProcessor::run_inference(std::string frame_id)
@@ -55,7 +100,7 @@ void FrameProcessor::run_inference(std::string frame_id)
     CURL *curl = curl_easy_init();
     if (curl)
     {
-        std::string url = "http://localhost:8000/infer?frame_id=" + frame_id;
+        std::string url = URL_ + "/infer?frame_id=" + frame_id;
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_perform(curl);
         curl_easy_cleanup(curl);
@@ -74,27 +119,34 @@ void FrameProcessor::setThreshold(float value)
 
 void drawBoxes(cv::Mat &frame, const std::vector<types::Detection> &detections)
 {
-    logger::info("Detections size: %zu", detections.size());
     for (const types::Detection &det : detections)
     {
-        logger::info("Entrou");
-        logger::info("Detection - Label: %s, Conf: %.2f, Box[x: %d, y: %d, w: %d, h: %d]",
                      det.label.c_str(), det.conf, det.box.x, det.box.y, det.box.width, det.box.height);
-        const types::BoundingBox &box = det.box;
-        cv::rectangle(frame,
-                      cv::Rect(box.x, box.y, box.width, box.height),
-                      cv::Scalar(0, 255, 0), 2);
+                     const types::BoundingBox &box = det.box;
+                     cv::rectangle(frame,
+                                   cv::Rect(box.x, box.y, box.width, box.height),
+                                   cv::Scalar(0, 255, 0), 2);
 
-        cv::putText(frame, det.label,
-                    cv::Point(box.x, box.y - 5),
-                    cv::FONT_HERSHEY_SIMPLEX,
-                    0.5, cv::Scalar(0, 255, 0), 1);
+                     cv::putText(frame, det.label,
+                                 cv::Point(box.x, box.y - 5),
+                                 cv::FONT_HERSHEY_SIMPLEX,
+                                 0.5, cv::Scalar(0, 255, 0), 1);
+    }
+}
+
+void drawKeypoints(cv::Mat &frame, const std::vector<float> keypoints)
+{
+    for (size_t i = 0; i + 1 < keypoints.size(); i += 2)
+    {
+        float x = keypoints[i];
+        float y = keypoints[i + 1];
+
+        cv::circle(frame, cv::Point(x, y), 5, cv::Scalar(255, 0, 0), -1);
     }
 }
 
 void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
 {
-    // logger::info("Attempting to open result JSON: %s", result_json_path.c_str());
 
     std::ifstream ifs(result_json_path);
     if (!ifs.is_open())
@@ -120,14 +172,18 @@ void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
         logger::error("JSON parse error in %s: %s", result_json_path.c_str(), e.what());
         return;
     }
-    // logger::info("Successfully parsed result JSON.");
     if (!result.contains("detections"))
     {
         logger::warning("Result JSON does not contain 'detections' key.");
         return;
     }
+    if (!result.contains("keypoints"))
+    {
+        logger::warning("Result JSON does not contain 'keypoints' key.");
+        return;
+    }
 
-    logger::info("Printing result json \n %s", result.dump(4).c_str());
+    // logger::info("Printing result json \n %s", result.dump(4).c_str());
 
     std::vector<types::Detection> detections;
     for (auto &item : result["detections"])
@@ -148,20 +204,18 @@ void FrameProcessor::draw(cv::Mat &frame, const std::string &result_json_path)
         detections.push_back(det);
     }
     drawBoxes(frame, detections);
+    drawKeypoints(frame, result["keypoints"]);
 }
 
 void FrameProcessor::process(cv::Mat &frame, const std::string &shm_name, std::string frame_id)
 {
     write_frame_to_shm(frame, shm_name);
-    // logger::info("write_frame_OK!");
     if (!modelRegistered())
-        register_inference_model(frame);
+        register_inference_model_(frame);
     run_inference(frame_id);
-    // logger::info("Run inference OK!!");
     std::string result_path = "/tmp/results/" + frame_id + ".json";
     while (true)
     {
-        // logger::info("Teste");
         if (std::filesystem::exists(result_path))
             break;
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
