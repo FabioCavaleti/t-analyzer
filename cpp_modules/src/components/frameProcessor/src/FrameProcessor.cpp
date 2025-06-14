@@ -121,7 +121,6 @@ void drawBoxes(cv::Mat &frame, const std::vector<types::Detection> &detections)
 {
     for (const types::Detection &det : detections)
     {
-                     det.label.c_str(), det.conf, det.box.x, det.box.y, det.box.width, det.box.height);
                      const types::BoundingBox &box = det.box;
                      cv::rectangle(frame,
                                    cv::Rect(box.x, box.y, box.width, box.height),

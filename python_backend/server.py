@@ -26,24 +26,27 @@ def get_ball_detections(img: np.ndarray):
     result = results[0]
     boxes = result.boxes
     ball_detections = []
-    if boxes is not None:
-        for box in boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            conf = box.conf[0].item()
-            class_id = int(box.cls[0])
-            label = REGISTERED_MODELS["ball_detector"].names[class_id]
+    if boxes is not None and len(boxes) > 0:
 
-            ball_detections.append(
-                {
-                    "x": int(x1),
-                    "y": int(y1),
-                    "w": int(x2 - x1),
-                    "h": int(y2 - y1),
-                    "conf": conf,
-                    "classId": class_id,
-                    "label": label,
-                }
-            )
+        max_conf_idx = boxes.conf.argmax().item()
+
+        box = boxes[max_conf_idx]
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        conf = box.conf[0].item()
+        class_id = int(box.cls[0])
+        label = REGISTERED_MODELS["ball_detector"].names[class_id]
+
+        ball_detections.append(
+            {
+                "x": int(x1),
+                "y": int(y1),
+                "w": int(x2 - x1),
+                "h": int(y2 - y1),
+                "conf": conf,
+                "classId": class_id,
+                "label": label,
+            }
+        )
     return ball_detections
 
 
@@ -57,6 +60,8 @@ def bbox_center(x1, y1, x2, y2):
 
 
 def get_player_detections(img: np.ndarray, keypoints: list):
+    if len(keypoints) < 14:
+        return []
     results = REGISTERED_MODELS["player_detector"].predict(img, imgsz=640)
     result = results[0]
     boxes = result.boxes
@@ -68,7 +73,7 @@ def get_player_detections(img: np.ndarray, keypoints: list):
     centroidB = sideB.mean(axis=0)
 
     player_detections = []
-    if boxes is not None:
+    if boxes is not None and len(boxes) > 0:
         candidates = []
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()

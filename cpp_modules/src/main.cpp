@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         {
             raw_frame_queue.push(frame);
             raw_q_counter++;
-            // logger::info("Raw Counter: %d", raw_q_counter);
+            logger::info("Raw Counter: %d", raw_q_counter);
         }
         raw_frame_queue.stop();
         logger::info("Reader Terminou!!");
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
             processor.process(frame, shm_name, std::to_string(frame_id));
             frame_id++;
             processed_frame_queue.push(frame);
-            // logger::info("Frame Counter: %d", frame_id);
+            logger::info("Frame Counter: %d", frame_id);
         }
         processed_frame_queue.stop();
         logger::info("Processor Terminou!!");
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
         {
             writer.writeFrame(frame);
             proc_q_counter++;
-            // logger::info("Proc Counter: %d", proc_q_counter);
+            logger::info("Proc Counter: %d", proc_q_counter);
         }
         logger::info("Writer Terminou");
         
