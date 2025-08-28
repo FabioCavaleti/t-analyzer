@@ -1,2 +1,2 @@
 # bt-analyzer
-Program that can read and analyze a beach tennis match
+Program that can read and analyze a tennis match
